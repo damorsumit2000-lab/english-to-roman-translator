@@ -394,7 +394,7 @@
     font-size: 1rem; font-weight: 300;
     line-height: 1.75;
     padding: 20px 18px;
-    min-height: 200px;
+    min-height: 260px;
     caret-color: var(--gold);
     transition: color 0.3s;
   }
@@ -408,7 +408,7 @@
     font-size: 1rem; font-weight: 300;
     line-height: 1.75;
     color: var(--text);
-    min-height: 200px;
+    min-height: 260px;
     white-space: pre-wrap;
     word-break: break-word;
     transition: color 0.3s;
@@ -437,12 +437,33 @@
     30% { transform: translateY(-8px); opacity: 1; }
   }
 
-  /* ══ ACTIONS ══ */
+  /* ══ ACTIONS — sticky bar ══ */
+  .actions-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 14px 0 16px;
+    margin-bottom: 44px;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  /* subtle top fade so it blends into the page above */
+  .actions-bar::before {
+    content: '';
+    position: absolute;
+    top: -32px; left: 0; right: 0;
+    height: 32px;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+    transition: background 0.3s;
+  }
+
   .actions {
     display: flex;
     gap: 12px;
     align-items: center;
-    margin-bottom: 44px;
     flex-wrap: wrap;
   }
 
@@ -721,11 +742,13 @@
   <!-- ERROR -->
   <div class="error-msg" id="errorMsg"></div>
 
-  <!-- ACTIONS -->
-  <div class="actions reveal">
-    <button class="btn-translate" id="translateBtn">Translate</button>
-    <button class="btn-clear" id="clearAllBtn">Reset</button>
-    <span class="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+  <!-- STICKY ACTIONS BAR -->
+  <div class="actions-bar">
+    <div class="actions">
+      <button class="btn-translate" id="translateBtn">Translate</button>
+      <button class="btn-clear" id="clearAllBtn">Reset</button>
+      <span class="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+    </div>
   </div>
 
   <!-- EXAMPLES -->
