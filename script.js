@@ -1,142 +1,149 @@
-// Language mapping
-const languageNames = {
-    'hindi': 'Roman Hindi (Hinglish)',
-    'gujarati': 'Roman Gujarati',
-    'marathi': 'Roman Marathi',
-    'tamil': 'Roman Tamil',
-    'telugu': 'Roman Telugu',
-    'kannada': 'Roman Kannada',
-    'bengali': 'Roman Bengali',
-    'punjabi': 'Roman Punjabi',
-    'malayalam': 'Roman Malayalam'
-};
+// ═══════════════════════════════════════════════
+//  Likhavat — English to Roman Script Translator
+//  Cloudflare Worker backend
+// ═══════════════════════════════════════════════
 
-// DOM Elements
-const inputText = document.getElementById('inputText');
-const outputText = document.getElementById('outputText');
-const targetLanguage = document.getElementById('targetLanguage');
+const WORKER_URL = 'https://super-haze-94cb.damorsumit2000.workers.dev';
+
+let selectedLang = 'Hindi';
+let isLoading = false;
+
+// ── Elements ──
+const inputText    = document.getElementById('inputText');
+const outputText   = document.getElementById('outputText');
+const outputLabel  = document.getElementById('outputLabel');
 const translateBtn = document.getElementById('translateBtn');
-const copyBtn = document.getElementById('copyBtn');
-const btnText = translateBtn.querySelector('.btn-text');
-const loader = translateBtn.querySelector('.loader');
+const clearBtn     = document.getElementById('clearBtn');
+const clearAllBtn  = document.getElementById('clearAllBtn');
+const copyBtn      = document.getElementById('copyBtn');
+const charCount    = document.getElementById('charCount');
+const errorMsg     = document.getElementById('errorMsg');
+const langGrid     = document.getElementById('langGrid');
+const examplesGrid = document.getElementById('examplesGrid');
 
-// Event Listeners
-translateBtn.addEventListener('click', translateText);
-copyBtn.addEventListener('click', copyToClipboard);
-
-// Example items click handlers
-document.querySelectorAll('.example-item').forEach(item => {
-    item.addEventListener('click', () => {
-        const lang = item.getAttribute('data-lang');
-        const text = item.getAttribute('data-text');
-        targetLanguage.value = lang;
-        inputText.value = text;
-        translateText();
-    });
+// ── Language selection ──
+langGrid.addEventListener('click', e => {
+  const btn = e.target.closest('.lang-btn');
+  if (!btn) return;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedLang = btn.dataset.lang;
+  outputLabel.textContent = `Roman ${selectedLang}`;
+  // Re-translate if output already exists
+  if (inputText.value.trim() && !outputText.classList.contains('placeholder')) {
+    translate();
+  }
 });
 
-// Main translation function
-async function translateText() {
-    const text = inputText.value.trim();
-    
-    if (!text) {
-        alert('Please enter some text to translate!');
-        return;
-    }
+// ── Char counter ──
+inputText.addEventListener('input', () => {
+  const len = inputText.value.length;
+  if (len > 1000) inputText.value = inputText.value.slice(0, 1000);
+  charCount.textContent = `${Math.min(len, 1000)} / 1000`;
+  hideError();
+});
 
-    // Check if config is loaded
-    if (typeof CONFIG === 'undefined' || !CONFIG.GROQ_API_KEY || CONFIG.GROQ_API_KEY === 'your-groq-api-key-here') {
-        alert('Please configure your Groq API key in config.js file!\n\n1. Copy config.example.js to config.js\n2. Add your API key from https://console.groq.com/');
-        return;
-    }
+// ── Ctrl+Enter shortcut ──
+inputText.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    translate();
+  }
+});
 
-    const selectedLang = targetLanguage.value;
-    const langName = languageNames[selectedLang];
+// ── Button events ──
+translateBtn.addEventListener('click', translate);
 
-    // Show loading state
-    translateBtn.disabled = true;
-    btnText.textContent = 'Translating...';
-    loader.style.display = 'inline-block';
-    outputText.value = '';
-    copyBtn.style.display = 'none';
+clearBtn.addEventListener('click', () => {
+  inputText.value = '';
+  charCount.textContent = '0 / 1000';
+  hideError();
+  inputText.focus();
+});
 
-    try {
-        const prompt = `You are an expert translator specializing in Indian languages. Convert the following English text to ${langName} (Roman script only, NOT Devanagari or native script).
+clearAllBtn.addEventListener('click', () => {
+  inputText.value = '';
+  charCount.textContent = '0 / 1000';
+  setOutput('placeholder', 'Translation will appear here…');
+  hideError();
+  inputText.focus();
+});
 
-Important instructions:
-- Use ONLY Roman/Latin alphabet characters
-- Maintain natural pronunciation and common usage
-- For ${selectedLang.charAt(0).toUpperCase() + selectedLang.slice(1)}, use authentic transliteration
-- Keep the translation conversational and natural
-- Do not include any explanations, just provide the transliterated text
-
-English text: "${text}"
-
-${langName} (Roman script):`;
-
-        const response = await fetch(CONFIG.GROQ_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${CONFIG.GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: CONFIG.MODEL,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are an expert translator for Indian languages. Always respond with ONLY the transliterated text in Roman script, no explanations or additional text.'
-                    },
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                temperature: 0.3,
-                max_tokens: 1000
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const translatedText = data.choices[0].message.content.trim();
-
-        // Display result
-        outputText.value = translatedText;
-        copyBtn.style.display = 'block';
-
-    } catch (error) {
-        console.error('Translation error:', error);
-        outputText.value = `Error: ${error.message}\n\nPlease check your API key and internet connection.`;
-    } finally {
-        // Reset button state
-        translateBtn.disabled = false;
-        btnText.textContent = 'Translate';
-        loader.style.display = 'none';
-    }
-}
-
-// Copy to clipboard function
-function copyToClipboard() {
-    outputText.select();
-    document.execCommand('copy');
-    
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = '✓ Copied!';
-    copyBtn.style.background = '#218838';
-    
+copyBtn.addEventListener('click', () => {
+  const text = outputText.textContent.trim();
+  if (!text || outputText.classList.contains('placeholder')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.textContent = 'Copied!';
+    copyBtn.classList.add('copied');
     setTimeout(() => {
-        copyBtn.textContent = originalText;
-        copyBtn.style.background = '#28a745';
+      copyBtn.textContent = 'Copy';
+      copyBtn.classList.remove('copied');
     }, 2000);
+  });
+});
+
+// ── Example cards ──
+examplesGrid.addEventListener('click', e => {
+  const card = e.target.closest('.example-card');
+  if (!card) return;
+  inputText.value = card.dataset.text;
+  charCount.textContent = `${card.dataset.text.length} / 1000`;
+  hideError();
+  translate();
+});
+
+// ── Core translate function ──
+async function translate() {
+  const text = inputText.value.trim();
+  if (!text) { showError('Please enter some text to translate.'); return; }
+  if (isLoading) return;
+
+  isLoading = true;
+  hideError();
+  translateBtn.disabled = true;
+  translateBtn.textContent = 'Translating…';
+
+  // Loading dots
+  outputText.className = 'output-text loading';
+  outputText.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, language: selectedLang })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+
+    setOutput('result', data.translation || 'No translation returned.');
+
+  } catch (err) {
+    setOutput('placeholder', 'Translation will appear here…');
+    showError(`Error: ${err.message}`);
+  } finally {
+    isLoading = false;
+    translateBtn.disabled = false;
+    translateBtn.textContent = 'Translate';
+  }
 }
 
-// Enter key support
-inputText.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') {
-        translateText();
-    }
-});
+// ── Helpers ──
+function setOutput(type, text) {
+  outputText.innerHTML = '';
+  outputText.textContent = text;
+  outputText.className = type === 'placeholder' ? 'output-text placeholder' : 'output-text';
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('visible');
+}
+
+function hideError() {
+  errorMsg.classList.remove('visible');
+}
