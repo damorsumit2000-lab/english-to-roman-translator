@@ -1,84 +1,793 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English to Roman Script Translator</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Likhavat — English to Roman Script</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230a0a0a'/><text x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' fill='%23c8a96e' font-family='serif' font-size='18' font-weight='700'>ल</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #191919;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(200,169,110,0.35);
+    --gold: #c8a96e;
+    --gold-dim: rgba(200,169,110,0.15);
+    --gold-glow: rgba(200,169,110,0.08);
+    --text: #e8e2d9;
+    --text-dim: #6b6560;
+    --text-mid: #a09890;
+    --accent: #c8a96e;
+    --error: #e07070;
+    --success: #6db88a;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Outfit', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ── Grain overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.5;
+  }
+
+  /* ── Background glow ── */
+  .bg-glow {
+    position: fixed;
+    top: -30vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(200,169,110,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 56px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 52px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: clamp(2.8rem, 6vw, 4.2rem);
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .brand-name em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .brand-sub {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .header-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Language selector ── */
+  .lang-section {
+    margin-bottom: 36px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .lang-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lang-btn {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--text-mid);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.02em;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lang-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold-glow);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .lang-btn:hover { 
+    color: var(--text);
+    border-color: var(--border-hover);
+  }
+
+  .lang-btn:hover::before { opacity: 1; }
+
+  .lang-btn.active {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  .lang-btn.active::before { opacity: 0; }
+
+  /* ── Input / Output panels ── */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .panel {
+    background: var(--surface);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .panel-action {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 2px 6px;
+  }
+
+  .panel-action:hover { color: var(--gold); }
+  .panel-action.copied { color: var(--success); }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.75;
+    padding: 20px 18px;
+    min-height: 200px;
+    caret-color: var(--gold);
+  }
+
+  textarea::placeholder {
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .output-text {
+    flex: 1;
+    padding: 20px 18px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--text);
+    min-height: 200px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .output-text.placeholder {
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .output-text.loading {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-dim);
+  }
+
+  /* ── Loading dots ── */
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.15s; }
+  .dot:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes dotBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-8px); opacity: 1; }
+  }
+
+  /* ── Translate button ── */
+  .actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 48px;
+  }
+
+  .btn-translate {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--gold);
+    border: none;
+    border-radius: 5px;
+    padding: 13px 32px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-translate::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn-translate:hover::before { opacity: 1; }
+  .btn-translate:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(200,169,110,0.3); }
+  .btn-translate:active { transform: translateY(0); }
+  .btn-translate:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .btn-clear {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 13px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-clear:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+  .shortcut-hint {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-left: auto;
+  }
+
+  kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  /* ── Error ── */
+  .error-msg {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--error);
+    padding: 12px 18px;
+    background: rgba(224,112,112,0.06);
+    border: 1px solid rgba(224,112,112,0.2);
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: none;
+    letter-spacing: 0.03em;
+  }
+
+  .error-msg.visible { display: block; }
+
+  /* ── Examples ── */
+  .examples-section { margin-bottom: 48px; }
+
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .example-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .example-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--gold);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.2s ease;
+  }
+
+  .example-card:hover {
+    border-color: var(--border-hover);
+    background: var(--surface2);
+  }
+
+  .example-card:hover::before { transform: scaleY(1); }
+
+  .example-en {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 5px;
+    font-style: italic;
+  }
+
+  .example-hint {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+  }
+
+  .footer-text {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .footer-langs {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Char counter ── */
+  .char-count {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    padding: 6px 12px 8px;
+    text-align: right;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: revealUp 0.6s ease forwards;
+  }
+  .reveal:nth-child(1) { animation-delay: 0.05s; }
+  .reveal:nth-child(2) { animation-delay: 0.12s; }
+  .reveal:nth-child(3) { animation-delay: 0.19s; }
+  .reveal:nth-child(4) { animation-delay: 0.26s; }
+  .reveal:nth-child(5) { animation-delay: 0.33s; }
+
+  @keyframes revealUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 640px) {
+    header { flex-direction: column; align-items: flex-start; padding: 36px 0 32px; }
+    .panels { grid-template-columns: 1fr; }
+    .panel:first-child { border-bottom: 1px solid var(--border); }
+    .actions { flex-wrap: wrap; }
+    .shortcut-hint { display: none; }
+    .examples-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🌐 English to Roman Script Translator</h1>
-            <p class="subtitle">Convert English to Hinglish, Roman Gujarati & more Indian languages</p>
-        </header>
+<div class="bg-glow"></div>
 
-        <div class="translator-card">
-            <div class="language-selector">
-                <label for="targetLanguage">Target Language:</label>
-                <select id="targetLanguage">
-                    <option value="hindi">Roman Hindi (Hinglish)</option>
-                    <option value="gujarati">Roman Gujarati</option>
-                    <option value="marathi">Roman Marathi</option>
-                    <option value="tamil">Roman Tamil</option>
-                    <option value="telugu">Roman Telugu</option>
-                    <option value="kannada">Roman Kannada</option>
-                    <option value="bengali">Roman Bengali</option>
-                    <option value="punjabi">Roman Punjabi</option>
-                    <option value="malayalam">Roman Malayalam</option>
-                </select>
-            </div>
+<div class="page">
+  <header class="reveal">
+    <div class="brand">
+      <div class="brand-name">Lik<em>havat</em></div>
+      <div class="brand-sub">English → Roman Script Transliterator</div>
+    </div>
+    <div class="header-badge">
+      <div class="badge-dot"></div>
+      Groq · Llama 3.3 70B
+    </div>
+  </header>
 
-            <div class="input-section">
-                <label for="inputText">English Text:</label>
-                <textarea 
-                    id="inputText" 
-                    placeholder="Enter English text here... (e.g., 'How are you?')"
-                    rows="6"
-                ></textarea>
-            </div>
+  <!-- Language Selector -->
+  <div class="lang-section reveal">
+    <div class="section-label">Select Language</div>
+    <div class="lang-grid" id="langGrid">
+      <button class="lang-btn active" data-lang="Hindi">Hindi</button>
+      <button class="lang-btn" data-lang="Gujarati">Gujarati</button>
+      <button class="lang-btn" data-lang="Marathi">Marathi</button>
+      <button class="lang-btn" data-lang="Tamil">Tamil</button>
+      <button class="lang-btn" data-lang="Telugu">Telugu</button>
+      <button class="lang-btn" data-lang="Kannada">Kannada</button>
+      <button class="lang-btn" data-lang="Bengali">Bengali</button>
+      <button class="lang-btn" data-lang="Punjabi">Punjabi</button>
+      <button class="lang-btn" data-lang="Malayalam">Malayalam</button>
+    </div>
+  </div>
 
-            <button id="translateBtn" class="translate-btn">
-                <span class="btn-text">Translate</span>
-                <span class="loader" style="display: none;"></span>
-            </button>
-
-            <div class="output-section">
-                <label for="outputText">Translated Text:</label>
-                <textarea 
-                    id="outputText" 
-                    placeholder="Translation will appear here..."
-                    rows="6"
-                    readonly
-                ></textarea>
-                <button id="copyBtn" class="copy-btn" style="display: none;">
-                    📋 Copy to Clipboard
-                </button>
-            </div>
-
-            <div class="examples">
-                <h3>Examples:</h3>
-                <div class="example-grid">
-                    <div class="example-item" data-lang="hindi" data-text="How are you?">
-                        <strong>Hindi:</strong> "How are you?" → "Aap kaise hain?"
-                    </div>
-                    <div class="example-item" data-lang="gujarati" data-text="Good morning">
-                        <strong>Gujarati:</strong> "Good morning" → "Suprabhat"
-                    </div>
-                    <div class="example-item" data-lang="marathi" data-text="Thank you">
-                        <strong>Marathi:</strong> "Thank you" → "Dhanyavaad"
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>Powered by Groq AI | Built with ❤️ for Indian Languages</p>
-        </footer>
+  <!-- Panels -->
+  <div class="panels reveal">
+    <!-- Input -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label">English</span>
+        <button class="panel-action" id="clearBtn">Clear</button>
+      </div>
+      <textarea
+        id="inputText"
+        placeholder="Type or paste English text here…"
+        spellcheck="false"
+        autocomplete="off"
+      ></textarea>
+      <div class="char-count" id="charCount">0 / 1000</div>
     </div>
 
-    <!-- Load config first, then script -->
-    <script src="config.js"></script>
-    <script src="script.js"></script>
+    <!-- Output -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label" id="outputLabel">Roman Hindi</span>
+        <button class="panel-action" id="copyBtn">Copy</button>
+      </div>
+      <div class="output-text placeholder" id="outputText">
+        Translation will appear here…
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Actions -->
+  <div class="actions reveal">
+    <button class="btn-translate" id="translateBtn">Translate</button>
+    <button class="btn-clear" id="clearAllBtn">Reset</button>
+    <span class="shortcut-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to translate</span>
+  </div>
+
+  <!-- Examples -->
+  <div class="examples-section reveal">
+    <div class="section-label">Quick Examples</div>
+    <div class="examples-grid" id="examplesGrid">
+      <div class="example-card" data-text="How are you?">
+        <div class="example-en">How are you?</div>
+        <div class="example-hint">Greeting</div>
+      </div>
+      <div class="example-card" data-text="Good morning, have a great day!">
+        <div class="example-en">Good morning!</div>
+        <div class="example-hint">Daily phrase</div>
+      </div>
+      <div class="example-card" data-text="I love my family very much">
+        <div class="example-en">I love my family</div>
+        <div class="example-hint">Emotion</div>
+      </div>
+      <div class="example-card" data-text="What is your name?">
+        <div class="example-en">What is your name?</div>
+        <div class="example-hint">Introduction</div>
+      </div>
+      <div class="example-card" data-text="Please come home for dinner tonight">
+        <div class="example-en">Come home for dinner</div>
+        <div class="example-hint">Invitation</div>
+      </div>
+      <div class="example-card" data-text="Thank you so much for your help">
+        <div class="example-en">Thank you!</div>
+        <div class="example-hint">Gratitude</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="reveal">
+    <div class="footer-text">Likhavat — 9 Indian Languages</div>
+    <div class="footer-langs">Hindi · Gujarati · Marathi · Tamil · Telugu · Kannada · Bengali · Punjabi · Malayalam</div>
+  </footer>
+</div>
+
+<script>
+  const WORKER_URL = 'https://super-haze-94cb.damorsumit2000.workers.dev';
+
+  let selectedLang = 'Hindi';
+  let isLoading = false;
+
+  // ── Elements ──
+  const inputText   = document.getElementById('inputText');
+  const outputText  = document.getElementById('outputText');
+  const outputLabel = document.getElementById('outputLabel');
+  const translateBtn= document.getElementById('translateBtn');
+  const clearBtn    = document.getElementById('clearBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const copyBtn     = document.getElementById('copyBtn');
+  const charCount   = document.getElementById('charCount');
+  const errorMsg    = document.getElementById('errorMsg');
+  const langGrid    = document.getElementById('langGrid');
+  const examplesGrid= document.getElementById('examplesGrid');
+
+  // ── Language selection ──
+  langGrid.addEventListener('click', e => {
+    const btn = e.target.closest('.lang-btn');
+    if (!btn) return;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLang = btn.dataset.lang;
+    outputLabel.textContent = `Roman ${selectedLang}`;
+    // If there's output, retranslate
+    const current = outputText.textContent.trim();
+    if (current && !outputText.classList.contains('placeholder') && inputText.value.trim()) {
+      translate();
+    }
+  });
+
+  // ── Char counter ──
+  inputText.addEventListener('input', () => {
+    const len = inputText.value.length;
+    charCount.textContent = `${len} / 1000`;
+    if (len > 1000) {
+      inputText.value = inputText.value.slice(0, 1000);
+      charCount.textContent = `1000 / 1000`;
+    }
+    hideError();
+  });
+
+  // ── Translate on Ctrl+Enter ──
+  inputText.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      translate();
+    }
+  });
+
+  // ── Buttons ──
+  translateBtn.addEventListener('click', translate);
+
+  clearBtn.addEventListener('click', () => {
+    inputText.value = '';
+    charCount.textContent = '0 / 1000';
+    hideError();
+    inputText.focus();
+  });
+
+  clearAllBtn.addEventListener('click', () => {
+    inputText.value = '';
+    charCount.textContent = '0 / 1000';
+    setOutput('placeholder', 'Translation will appear here…');
+    hideError();
+    inputText.focus();
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const text = outputText.textContent.trim();
+    if (!text || outputText.classList.contains('placeholder')) return;
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = 'Copied!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+
+  // ── Examples ──
+  examplesGrid.addEventListener('click', e => {
+    const card = e.target.closest('.example-card');
+    if (!card) return;
+    inputText.value = card.dataset.text;
+    charCount.textContent = `${card.dataset.text.length} / 1000`;
+    hideError();
+    translate();
+  });
+
+  // ── Core translate function ──
+  async function translate() {
+    const text = inputText.value.trim();
+    if (!text) { showError('Please enter some text to translate.'); return; }
+    if (isLoading) return;
+
+    isLoading = true;
+    hideError();
+    translateBtn.disabled = true;
+    translateBtn.textContent = 'Translating…';
+
+    // Loading state
+    outputText.className = 'output-text loading';
+    outputText.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+    try {
+      const res = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language: selectedLang })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+
+      setOutput('result', data.translation || 'No translation returned.');
+
+    } catch (err) {
+      setOutput('placeholder', 'Translation will appear here…');
+      showError(`Error: ${err.message}`);
+    } finally {
+      isLoading = false;
+      translateBtn.disabled = false;
+      translateBtn.textContent = 'Translate';
+    }
+  }
+
+  function setOutput(type, text) {
+    outputText.innerHTML = '';
+    outputText.textContent = text;
+    outputText.className = type === 'placeholder'
+      ? 'output-text placeholder'
+      : 'output-text';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+</script>
 </body>
 </html>
