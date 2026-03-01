@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English to Roman Script Translator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 English to Roman Script Translator</h1>
+            <p class="subtitle">Convert English to Hinglish, Roman Gujarati & more Indian languages</p>
+        </header>
+
+        <div class="translator-card">
+            <div class="language-selector">
+                <label for="targetLanguage">Target Language:</label>
+                <select id="targetLanguage">
+                    <option value="hindi">Roman Hindi (Hinglish)</option>
+                    <option value="gujarati">Roman Gujarati</option>
+                    <option value="marathi">Roman Marathi</option>
+                    <option value="tamil">Roman Tamil</option>
+                    <option value="telugu">Roman Telugu</option>
+                    <option value="kannada">Roman Kannada</option>
+                    <option value="bengali">Roman Bengali</option>
+                    <option value="punjabi">Roman Punjabi</option>
+                    <option value="malayalam">Roman Malayalam</option>
+                </select>
+            </div>
+
+            <div class="input-section">
+                <label for="inputText">English Text:</label>
+                <textarea 
+                    id="inputText" 
+                    placeholder="Enter English text here... (e.g., 'How are you?')"
+                    rows="6"
+                ></textarea>
+            </div>
+
+            <button id="translateBtn" class="translate-btn">
+                <span class="btn-text">Translate</span>
+                <span class="loader" style="display: none;"></span>
+            </button>
+
+            <div class="output-section">
+                <label for="outputText">Translated Text:</label>
+                <textarea 
+                    id="outputText" 
+                    placeholder="Translation will appear here..."
+                    rows="6"
+                    readonly
+                ></textarea>
+                <button id="copyBtn" class="copy-btn" style="display: none;">
+                    📋 Copy to Clipboard
+                </button>
+            </div>
+
+            <div class="examples">
+                <h3>Examples:</h3>
+                <div class="example-grid">
+                    <div class="example-item" data-lang="hindi" data-text="How are you?">
+                        <strong>Hindi:</strong> "How are you?" → "Aap kaise hain?"
+                    </div>
+                    <div class="example-item" data-lang="gujarati" data-text="Good morning">
+                        <strong>Gujarati:</strong> "Good morning" → "Suprabhat"
+                    </div>
+                    <div class="example-item" data-lang="marathi" data-text="Thank you">
+                        <strong>Marathi:</strong> "Thank you" → "Dhanyavaad"
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by Groq AI | Built with ❤️ for Indian Languages</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
