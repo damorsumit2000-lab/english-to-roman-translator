@@ -2,7 +2,7 @@
 // Replace script.js with this file when using Cloudflare Worker
 
 // IMPORTANT: Update this URL after deploying your Cloudflare Worker
-const WORKER_URL = 'https://english-roman-translator-api.YOUR-SUBDOMAIN.workers.dev';
+const WORKER_URL = 'https://super-haze-94cb.damorsumit2000.workers.dev';
 
 const languageNames = {
     'hindi': 'Roman Hindi (Hinglish)',
