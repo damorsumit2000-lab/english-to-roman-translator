@@ -667,6 +667,113 @@
     .shortcut-hint { display: none; }
     .examples-grid { grid-template-columns: 1fr 1fr; }
   }
+
+  /* ══ TOKEN METER ══ */
+  .token-meter {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .token-meter:hover { border-color: var(--border-hover); }
+
+  .meter-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .meter-body { flex: 1; min-width: 0; }
+
+  .meter-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .meter-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+
+  .meter-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-mid);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+
+  .meter-count strong {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 0;
+  }
+
+  .meter-count .meter-total {
+    color: var(--text-dim);
+    font-size: 0.65rem;
+  }
+
+  .meter-bar-track {
+    width: 100%;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .meter-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--gold);
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s;
+    transform-origin: left;
+  }
+
+  /* Color changes as it depletes */
+  .meter-bar-fill.warn  { background: #d4824a; }
+  .meter-bar-fill.crit  { background: var(--error); }
+
+  .meter-reset {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color 0.3s;
+  }
+
+  .meter-loading {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    animation: meterPulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes meterPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
 </style>
 </head>
 <body>
@@ -692,6 +799,21 @@
       </div>
     </div>
   </header>
+
+  <!-- TOKEN METER -->
+  <div class="token-meter reveal" id="tokenMeter">
+    <div class="meter-icon">⚡</div>
+    <div class="meter-body">
+      <div class="meter-top">
+        <span class="meter-label">Daily Translations</span>
+        <span class="meter-count" id="meterCount"><span class="meter-loading">Loading…</span></span>
+      </div>
+      <div class="meter-bar-track">
+        <div class="meter-bar-fill" id="meterBar" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="meter-reset" id="meterReset">Resets in —</div>
+  </div>
 
   <!-- TONE SELECTOR -->
   <div class="tone-section reveal">
@@ -773,6 +895,7 @@
 
 <script>
   const WORKER_URL = 'https://super-haze-94cb.damorsumit2000.workers.dev';
+  const MAX_TRANSLATIONS = 769;
 
   let selectedLang = 'Hindi';
   let selectedTone = 'standard';
@@ -800,6 +923,63 @@
   const examplesGrid = document.getElementById('examplesGrid');
   const themeToggle  = document.getElementById('themeToggle');
   const themeIcon    = document.getElementById('themeIcon');
+  const meterCount   = document.getElementById('meterCount');
+  const meterBar     = document.getElementById('meterBar');
+  const meterReset   = document.getElementById('meterReset');
+
+  // ══ TOKEN METER ══
+  async function fetchQuota() {
+    try {
+      const res = await fetch(WORKER_URL + '?quota=1');
+      const data = await res.json();
+      updateMeter(data.used, data.resetIn);
+    } catch {
+      meterCount.innerHTML = '<span style="color:var(--text-dim);font-size:0.6rem">Unavailable</span>';
+    }
+  }
+
+  function updateMeter(used, resetIn) {
+    const remaining = Math.max(0, MAX_TRANSLATIONS - used);
+    const pct = (remaining / MAX_TRANSLATIONS) * 100;
+
+    // Count display
+    meterCount.innerHTML = `<strong>${remaining}</strong> <span class="meter-total">/ ${MAX_TRANSLATIONS} left today</span>`;
+
+    // Bar
+    meterBar.style.width = pct + '%';
+    meterBar.className = 'meter-bar-fill';
+    if (pct <= 10) meterBar.classList.add('crit');
+    else if (pct <= 30) meterBar.classList.add('warn');
+
+    // Reset countdown
+    if (resetIn) {
+      const h = Math.floor(resetIn / 3600);
+      const m = Math.floor((resetIn % 3600) / 60);
+      meterReset.textContent = h > 0 ? `Resets in ${h}h ${m}m` : `Resets in ${m}m`;
+    }
+  }
+
+  // Countdown timer — ticks every minute
+  let resetSeconds = null;
+  function startCountdown(seconds) {
+    resetSeconds = seconds;
+    setInterval(() => {
+      if (resetSeconds <= 0) return;
+      resetSeconds -= 60;
+      const h = Math.floor(resetSeconds / 3600);
+      const m = Math.floor((resetSeconds % 3600) / 60);
+      meterReset.textContent = h > 0 ? `Resets in ${h}h ${m}m` : resetSeconds > 0 ? `Resets in ${m}m` : 'Resetting…';
+    }, 60000);
+  }
+
+  fetchQuota().then(() => {
+    // Start countdown based on what worker returned
+    const text = meterReset.textContent;
+    const hMatch = text.match(/(\d+)h/);
+    const mMatch = text.match(/(\d+)m/);
+    const secs = ((hMatch ? parseInt(hMatch[1]) : 0) * 3600) + ((mMatch ? parseInt(mMatch[1]) : 0) * 60);
+    if (secs > 0) startCountdown(secs);
+  });
 
   // ══ THEME TOGGLE ══
   const savedTheme = localStorage.getItem('likhavat-theme') || 'dark';
@@ -901,6 +1081,9 @@
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       setOutput('result', data.translation || 'No translation returned.');
+
+      // Update meter with fresh quota from response
+      if (data.quota) updateMeter(data.quota.used, data.quota.resetIn);
 
     } catch (err) {
       setOutput('placeholder', 'Translation will appear here…');
