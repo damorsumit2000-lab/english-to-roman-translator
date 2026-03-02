@@ -811,7 +811,7 @@
     <div class="header-right">
       <div class="header-badge">
         <div class="badge-dot"></div>
-        Groq · Llama 3.3 70B
+        Gemini · 2.5 Flash
         <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
           <div class="theme-toggle-track">
             <div class="theme-toggle-thumb"></div>
@@ -834,7 +834,7 @@
     </div>
     <div class="meter-row-bottom">
       <span class="meter-reset" id="meterReset">Resets in —</span>
-      <span class="meter-rate">9 Translations / min</span>
+      <span class="meter-rate">15 Translations / min</span>
     </div>
   </div>
 
@@ -913,13 +913,13 @@
   <!-- FOOTER -->
   <footer class="reveal">
     <div class="footer-text">Likhavat — by Sumit Damor</div>
-    <div class="footer-langs">Hindi · Gujarati · Marathi · Tamil · Telugu · Kannada · Bengali · Punjabi · Malayalam</div>
+    <div class="footer-langs">Hindi · Gujarati · Marathi · Tamil · Telugu · Kannada · Bengali · Punjabi · Malayalam · Odia</div>
   </footer>
 </div>
 
 <script>
   const WORKER_URL = 'https://super-haze-94cb.damorsumit2000.workers.dev';
-  const MAX_TRANSLATIONS = 153;
+  const MAX_TRANSLATIONS = 1000;  // Gemini free tier: 1000 req/day
 
   let selectedLang = 'Hindi';
   let selectedTone = 'standard';
