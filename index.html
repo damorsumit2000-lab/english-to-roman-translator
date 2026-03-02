@@ -811,7 +811,7 @@
     <div class="header-right">
       <div class="header-badge">
         <div class="badge-dot"></div>
-        Gemini · 2.5 Flash-Lite
+        <span id="apiBadge">Gemini · 2.5 Flash-Lite</span>
         <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
           <div class="theme-toggle-track">
             <div class="theme-toggle-thumb"></div>
@@ -1106,8 +1106,14 @@
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       setOutput('result', data.translation || 'No translation returned.');
 
-      // Update meter with fresh quota from response
+      // Update meter and API badge from response
       if (data.quota) updateMeter(data.quota.used, data.quota.resetIn);
+      if (data.api) {
+        const apiBadge = document.getElementById('apiBadge');
+        apiBadge.textContent = data.api === 'groq-fallback'
+          ? 'Groq · Llama 3.3 70B ↩'
+          : 'Gemini · 2.5 Flash-Lite';
+      }
 
     } catch (err) {
       setOutput('placeholder', 'Translation will appear here…');
