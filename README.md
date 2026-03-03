@@ -160,6 +160,6 @@ Found a bug? Please open an issue on GitHub with:
 - [ ] Add dark mode
 - [ ] Support for longer texts
 
----
 https://damorsumit2000-lab.github.io/english-to-roman-translator/ - Click to visit
+---
 Made with ❤️ for Indian Languages | Powered by Groq AI
